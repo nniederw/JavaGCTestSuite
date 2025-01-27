@@ -15,8 +15,8 @@ public class NaturalNumbersScrambler
 
     public void CheckValidity()
     {
-        int exp = ExpectedSumOfNumbers();
-        int sum = SumOfNumbers();
+        long exp = ExpectedSumOfNumbers();
+        long sum = SumOfNumbers();
         if (exp != sum) {
             throw new RuntimeException("Sum of numbers (" + sum + ") was not the expected sum: (" + exp + ")");
         }
@@ -47,15 +47,15 @@ public class NaturalNumbersScrambler
         }
     }
 
-    private int ExpectedSumOfNumbers()
+    private long ExpectedSumOfNumbers()
     {
-        int n = Elements;
+        long n = Elements;
         return (n * (n + 1)) / 2;
     }
 
-    private int SumOfNumbers()
+    private long SumOfNumbers()
     {
-        return Numbers.stream().mapToInt(Integer::intValue).sum();
+        return Numbers.stream().mapToLong(Integer::intValue).sum();
     }
 
 }
