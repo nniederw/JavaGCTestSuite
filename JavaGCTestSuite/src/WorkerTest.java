@@ -4,7 +4,9 @@ import java.util.Random;
 
 public class WorkerTest {
     private Data[] datas = new Data[0];
-    private final int ThreadCout = 8;
+    private final int ThreadCount = 8;
+    private final int GarbageGeneratorThreadCount = 2;
+
     private Random rng = new Random(0);
     private int WorkTime = 0;
 
@@ -20,11 +22,14 @@ public class WorkerTest {
         }
         workerTest.WorkTime = workTime;
         List<Worker> workers = new ArrayList<>();
-        for (int i = 0; i < workerTest.ThreadCout; i++) {
+        for (int i = 0; i < workerTest.ThreadCount; i++) {
             workers.add(new Worker(workerTest));
+            if(i < workerTest.GarbageGeneratorThreadCount){
+                workers.get(i).GarbageGenerator = true;
+            }
         }
         List<Thread> threads = new ArrayList<Thread>();
-        for (int i = 0; i < workerTest.ThreadCout; i++) {
+        for (int i = 0; i < workerTest.ThreadCount; i++) {
             threads.add(new Thread(workers.get(i)));
         }
         for (var thread : threads) {
@@ -55,7 +60,7 @@ public class WorkerTest {
         Switch(RandomIndexInArr(), RandomIndexInArr());
     }
 
-    private synchronized void Switch(int i1, int i2) {
+    private synchronized void Switch(final int i1, final int i2) {
         var d1 = datas[i1];
         var d2 = datas[i2];
         datas[i1] = d2;
@@ -66,10 +71,13 @@ public class WorkerTest {
         GenerateGarbage(100);
     }
 
-    public void GenerateGarbage(final int objectCount) {
+    public Data GenerateGarbage(final int objectCount) {
+        Data res = null;
         for (int i = 0; i < objectCount; i++) {
             Data t = new Data(0); //let's hope this isn't optimized out
+            res = t;
         }
+        return res;
     }
 
     public void Work() { //calculates a high power of a number
@@ -110,6 +118,7 @@ class Data {
 
 class Worker implements Runnable {
     private final WorkerTest WorkerTest;
+    public boolean GarbageGenerator = false;
     public boolean FinishedCorrectly = false;
     public Worker(WorkerTest workerTest) {
         WorkerTest = workerTest;
@@ -118,12 +127,17 @@ class Worker implements Runnable {
     @Override
     public void run() {
         for (int i = 0; i < 100; i++) {
-            WorkerTest.SwitchMultipleTimes(100);
-            WorkerTest.CheckValidity();
-            WorkerTest.GenerateGarbage(1000);
-            WorkerTest.CheckValidity();
-            WorkerTest.Work();
-            WorkerTest.CheckValidity();
+            if(GarbageGenerator){
+                WorkerTest.GenerateGarbage(10000);
+            }
+            else {
+                WorkerTest.SwitchMultipleTimes(5);
+                WorkerTest.CheckValidity();
+                WorkerTest.GenerateGarbage(10);
+                WorkerTest.CheckValidity();
+                WorkerTest.Work();
+                WorkerTest.CheckValidity();
+            }
         }
         FinishedCorrectly = true;
     }
