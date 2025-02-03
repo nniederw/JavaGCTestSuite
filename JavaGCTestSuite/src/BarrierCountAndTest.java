@@ -12,6 +12,7 @@ public class BarrierCountAndTest {
             }
         }
         System.out.println("Should have observed about "+count+" object reference writes");
+        System.out.println("PASSED");
     }
     static class ReferenceObject{
         public Object obj;

@@ -1,9 +1,17 @@
 public class ScramblerTest {
-    public static void RunTest(){
-        RunTest(10000,1000,1000);
+    public static void RunTest() {
+        RunTest(10000, 1000, 1000);
     }
 
-    public static void RunTest(final int elements, final int batchScrambleCount, final int batchCount){
+    public static void RunTest(final int elements) {
+        RunTest(elements, 1000, 1000);
+    }
+
+    public static void RunTest(final int elements, final int batchScrambleCount) {
+        RunTest(elements, batchScrambleCount, 1000);
+    }
+
+    public static void RunTest(final int elements, final int batchScrambleCount, final int batchCount) {
         NaturalNumbersScrambler nns = new NaturalNumbersScrambler(elements);
         for (int i = 0; i < batchCount; i++) {
             nns.CheckValidity();

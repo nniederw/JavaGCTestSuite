@@ -4,18 +4,27 @@ import java.util.Random;
 
 public class WorkerTest {
     private Data[] datas = new Data[0];
-    private final int ThreadCount = 8;
-    private final int GarbageGeneratorThreadCount = 2;
+    private int ThreadCount = 8;
+    private int GarbageGeneratorThreadCount = 2;
 
-    private Random rng = new Random(0);
+    private final Random rng = new Random(0);
     private int WorkTime = 0;
 
     public static void RunTest() throws InterruptedException {
-        RunTest(10000, 100000);
+        RunTest(6, 2, 10000, 100000);
     }
 
-    public static void RunTest(int elements, int workTime) throws InterruptedException {
+    public static void RunTest(final int workThreads) throws InterruptedException {
+        RunTest(workThreads, 2, 10000, 100000);
+    }
+    public static void RunTest(final int workThreads, final int garbageGeneratorThreadCount) throws InterruptedException {
+        RunTest(workThreads, garbageGeneratorThreadCount, 10000, 100000);
+    }
+
+    public static void RunTest(final int workThreads, final int garbageGeneratorThreadCount, final int elements, final int workTime) throws InterruptedException {
         WorkerTest workerTest = new WorkerTest();
+        workerTest.ThreadCount = workThreads + garbageGeneratorThreadCount;
+        workerTest.GarbageGeneratorThreadCount = garbageGeneratorThreadCount;
         workerTest.datas = new Data[elements];
         for (int i = 0; i < elements; i++) {
             workerTest.datas[i] = new Data(i + 1);
@@ -24,11 +33,11 @@ public class WorkerTest {
         List<Worker> workers = new ArrayList<>();
         for (int i = 0; i < workerTest.ThreadCount; i++) {
             workers.add(new Worker(workerTest));
-            if(i < workerTest.GarbageGeneratorThreadCount){
+            if (i < workerTest.GarbageGeneratorThreadCount) {
                 workers.get(i).GarbageGenerator = true;
             }
         }
-        List<Thread> threads = new ArrayList<Thread>();
+        List<Thread> threads = new ArrayList<>();
         for (int i = 0; i < workerTest.ThreadCount; i++) {
             threads.add(new Thread(workers.get(i)));
         }
@@ -39,7 +48,7 @@ public class WorkerTest {
             thread.join();
         }
         for (var worker : workers) {
-            if(!worker.FinishedCorrectly){
+            if (!worker.FinishedCorrectly) {
                 throw new RuntimeException("Unexpected events happened. Thread didn't finish correctly.");
             }
         }
@@ -60,11 +69,13 @@ public class WorkerTest {
         Switch(RandomIndexInArr(), RandomIndexInArr());
     }
 
-    private synchronized void Switch(final int i1, final int i2) {
-        var d1 = datas[i1];
-        var d2 = datas[i2];
-        datas[i1] = d2;
-        datas[i2] = d1;
+    private void Switch(final int i1, final int i2) {
+        synchronized (datas){
+            var d1 = datas[i1];
+            var d2 = datas[i2];
+            datas[i1] = d2;
+            datas[i2] = d1;
+        }
     }
 
     public void GenerateGarbage() {
@@ -91,14 +102,16 @@ public class WorkerTest {
         System.out.println("Calculated the " + power + "'th power of " + startX + ", Result = " + x);
     }
 
-    public synchronized void CheckValidity() {
-        long sum = 0;
-        for (Data data : datas) {
-            sum += data.Number;
-        }
-        long exp = ExpectedSumOfNumbers();
-        if (sum != exp) {
-            throw new RuntimeException("Sum of numbers (" + sum + ") was not the expected sum: (" + exp + ")");
+    public void CheckValidity() {
+        synchronized(datas){
+            long sum = 0;
+            for (Data data : datas) {
+                sum += data.Number;
+            }
+            long exp = ExpectedSumOfNumbers();
+            if (sum != exp) {
+                throw new RuntimeException("Sum of numbers (" + sum + ") was not the expected sum: (" + exp + ")");
+            }
         }
     }
 
@@ -120,6 +133,7 @@ class Worker implements Runnable {
     private final WorkerTest WorkerTest;
     public boolean GarbageGenerator = false;
     public boolean FinishedCorrectly = false;
+
     public Worker(WorkerTest workerTest) {
         WorkerTest = workerTest;
     }
@@ -127,10 +141,9 @@ class Worker implements Runnable {
     @Override
     public void run() {
         for (int i = 0; i < 100; i++) {
-            if(GarbageGenerator){
+            if (GarbageGenerator) {
                 WorkerTest.GenerateGarbage(10000);
-            }
-            else {
+            } else {
                 WorkerTest.SwitchMultipleTimes(5);
                 WorkerTest.CheckValidity();
                 WorkerTest.GenerateGarbage(10);
